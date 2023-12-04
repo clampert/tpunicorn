@@ -738,7 +738,7 @@ def parse_tpu_data_disk(tpu, disk_index=0):
 
 def is_tpu_vm(tpu, project=None):
   tpu = get_tpu(tpu, silent=True, project=project)
-  return tpu is not None and parse_tpu_version(tpu).startswith('v2')
+  return tpu is not None # and parse_tpu_version(tpu).startswith('v2')
 
 def format_args(tpu, project=None):
   r = _format_args(tpu)
@@ -819,7 +819,7 @@ def create_tpu_command(tpu=None, zone=None, version=None, accelerator_type=None,
       else:
         disk_mode = 'read-write'
       data_disk += ',mode=' + disk_mode.lower().replace('_', '-')
-  return build_commandline("gcloud compute tpus create",
+  return build_commandline("gcloud compute tpus tpu-vm create",
                            name,
                            zone=zone,
                            project=project,
@@ -839,7 +839,7 @@ def delete_tpu_command(tpu, zone=None, project=None, async_=False):
     zone = parse_tpu_zone(tpu)
   if project is None:
     project = parse_tpu_project(tpu)
-  return build_commandline("gcloud compute tpus delete",
+  return build_commandline("gcloud compute tpus tpu-vm delete",
                            parse_tpu_id(tpu),
                            zone=zone,
                            project=project,
@@ -852,7 +852,7 @@ def start_tpu_command(tpu, zone=None, project=None, async_=False):
     zone = parse_tpu_zone(tpu)
   if project is None:
     project = parse_tpu_project(tpu)
-  return build_commandline("gcloud compute tpus start",
+  return build_commandline("gcloud compute tpus tpu-vm start",
                            parse_tpu_id(tpu),
                            zone=zone,
                            project=project,
@@ -865,7 +865,7 @@ def stop_tpu_command(tpu, zone=None, project=None, async_=False):
     zone = parse_tpu_zone(tpu)
   if project is None:
     project = parse_tpu_project(tpu)
-  return build_commandline("gcloud compute tpus stop",
+  return build_commandline("gcloud compute tpus tpu-vm stop",
                            parse_tpu_id(tpu),
                            zone=zone,
                            project=project,
@@ -880,7 +880,7 @@ def reimage_tpu_command(tpu, zone=None, project=None, version=None, async_=False
     project = parse_tpu_project(tpu)
   if version is None:
     version = parse_tpu_version(tpu)
-  return build_commandline("gcloud compute tpus reimage",
+  return build_commandline("gcloud compute tpus tpu-vm reimage",
                            parse_tpu_id(tpu),
                            zone=zone,
                            project=project,
@@ -894,7 +894,7 @@ def ssh_tpu_command(tpu, zone=None, project=None, ssh_flag=None, worker=None):
     zone = parse_tpu_zone(tpu)
   if project is None:
     project = parse_tpu_project(tpu)
-  return build_commandline("gcloud alpha compute tpus tpu-vm ssh",
+  return build_commandline("gcloud compute tpus tpu-vm ssh",
                            parse_tpu_id(tpu),
                            zone=zone,
                            project=project,

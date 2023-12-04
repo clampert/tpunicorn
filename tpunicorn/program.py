@@ -136,7 +136,7 @@ def complete_tpu_id(ctx, args, incomplete, zone=None, project=None):
   return [tpunicorn.tpu.parse_tpu_id(tpu) for tpu in tpus]
 
 # @cli.command()
-# @click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+# @click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 # @tpu_zone_option()
 # @click.option('-p', '--project', type=click.STRING, default=None)
 # def create(tpu, zone, project):
@@ -193,7 +193,7 @@ def do_step(label=None, command=None, dry_run=False, delay_after=1.0, args=(), k
   return result
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, metavar="[TPU; default=\"0+\"]", default="0+", autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, metavar="[TPU; default=\"0+\"]", default="0+", shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-v', '--version', type=click.STRING, metavar="[VERSION; default=\"v2-alpha\"]", default="v2-alpha",
               help="By default, the TPU version is v2-alpha, which means it's created as a TPU VM."
@@ -238,13 +238,13 @@ def create(ctx, tpu, zone, version, accelerator_type, data_disk, async_, descrip
   is_v2 = (version is not None) and version.startswith('v2')
   if not is_v2 and data_disk is not None:
     raise ValueError("--data-disk can only be specified for TPU VMs; try --version v2-alpha")
-  if range is None and index >= 0 and not is_v2: # --range appears to be broken on TPU VMs for now; don't give a default
-    if cores == 8:
-      range = "10.48.{i}.0/29".format(i=index)
-    else:
-      i=index + 2
-      cidr=int(32 + 2 - math.log2(cores))
-      range="10.{i}.0.0/{cidr}".format(i=i, cidr=cidr)
+  #if range is None and index >= 0 and not is_v2: # --range appears to be broken on TPU VMs for now; don't give a default
+  #  if cores == 8:
+  #    range = "10.48.{i}.0/29".format(i=index)
+  #  else:
+  #    i=index + 2
+  #    cidr=int(32 + 2 - math.log2(cores))
+  #    range="10.{i}.0.0/{cidr}".format(i=i, cidr=cidr)
   if range is not None and range.startswith("10.48.") and cores > 8:
     raise ValueError("The range {range!r} conflicts with the default 10.48.* range of v2-8's and v3-8's. I decided to raise an error rather than a warning, because we rely on this specific range for our own internal networking. If you're making a TPU pod, try a different index other than {index}. If you really, really wanted to use 10.48.* for you TPU pods, I'm very sorry; ping me on twitter (@theshawwn) and I'll change this.".format(range=range, index=index))
   try:
@@ -272,7 +272,7 @@ def create(ctx, tpu, zone, version, accelerator_type, data_disk, async_, descrip
 
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('-y', '--yes', is_flag=True)
@@ -298,7 +298,7 @@ def delete(tpu, zone, project, yes, dry_run, async_):
     create)
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('-y', '--yes', is_flag=True)
@@ -324,7 +324,7 @@ def stop(tpu, zone, project, yes, dry_run, async_):
     start)
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('-y', '--yes', is_flag=True)
@@ -350,7 +350,7 @@ def start(tpu, zone, project, yes, dry_run, async_):
     stop)
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('--version', type=click.STRING, metavar="<TF_VERSION>",
@@ -380,7 +380,7 @@ def reimage(tpu, zone, project, version, yes, dry_run, async_):
       'would be' if dry_run else 'is'))
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('--version', type=click.STRING, metavar="<TF_VERSION>",
@@ -394,10 +394,13 @@ def reimage(tpu, zone, project, version, yes, dry_run, async_):
 @click.option('-c', '--command', type=click.STRING, multiple=True,
               help="After the TPU is HEALTHY, run this command."
               " (Useful for killing a training session after the TPU has been recreated.)")
+@click.option('-x', '--exec', type=click.STRING, multiple=True,
+              help="After the TPU is HEALTHY, run this command on the TPU(!)"
+              " (Useful for starting a training session after the TPU has been recreated.)")
 @click.option('--retry', type=int, help="if the TPU creation fails (due to capacity errors or otherwise), "
                                         "retry the creation command after this many seconds")
 @click.option('--retry-randomness', type=float, default=1.0, help="multiply retry time by a float between 1 and retry_randomness")
-def recreate(tpu, zone, project, version, yes, dry_run, preempted, command, retry, retry_randomness, **kws):
+def recreate(tpu, zone, project, version, yes, dry_run, preempted, command, exec, retry, retry_randomness, **kws):
   """
   Recreates a TPU, optionally switching the system software to the specified TF_VERSION.
   """
@@ -419,6 +422,9 @@ def recreate(tpu, zone, project, version, yes, dry_run, preempted, command, retr
     if len(command) > 0:
       for i, cmd in enumerate(command):
         print_step('Step {}: run this command:'.format(i+4), cmd)
+    if len(exec) > 0:
+      for i, cmd in enumerate(exec):
+        print_step('Step {}: run this command on the TPU:'.format(i+4+len(command)), cmd)
     if not click.confirm('Proceed? {}'.format('(dry run)' if dry_run else '')):
       return
   do_step('Step 1: delete TPU...', delete, dry_run=dry_run)
@@ -434,13 +440,16 @@ def recreate(tpu, zone, project, version, yes, dry_run, preempted, command, retr
   if len(command) > 0:
     for i, cmd in enumerate(command):
       do_step('Step {}: running command...'.format(i+4), cmd, dry_run=dry_run)
+  if len(exec) > 0:
+    for i, cmd in enumerate(exec):
+      run_on_tpu('Step {}: running command...'.format(i+4+len(command)), cmd, dry_run=dry_run)
   click.echo('TPU {} {} ready for training.'.format(
     tpunicorn.tpu.parse_tpu_id(tpu),
     'would be' if dry_run else 'is'))
 
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('-y', '--yes', is_flag=True)
@@ -464,7 +473,7 @@ def ssh(tpu, zone, project, yes, dry_run, ssh_flag, worker):
 
 
 @cli.command()
-@click.argument('tpu', type=click.STRING, autocompletion=complete_tpu_id)
+@click.argument('tpu', type=click.STRING, shell_complete=complete_tpu_id)
 @tpu_zone_option()
 @click.option('-p', '--project', type=click.STRING, default=None)
 @click.option('--dry-run', is_flag=True)
@@ -473,6 +482,9 @@ def ssh(tpu, zone, project, yes, dry_run, ssh_flag, worker):
 @click.option('-c', '--command', type=click.STRING, multiple=True,
               help="After the TPU has been recreated and is HEALTHY, run this command."
                    " (Useful for killing a training session after the TPU has been recreated.)")
+@click.option('-x', '--exec', type=click.STRING, multiple=True,
+              help="After the TPU is HEALTHY, run this command on the TPU(!)"
+              " (Useful for starting a training session after the TPU has been recreated.)")
 @click.pass_context
 def babysit(ctx, tpu, zone, project, dry_run, interval, command):
   """Checks TPU every INTERVAL seconds. Recreates the TPU if (and only if) the tpu has preempted."""
