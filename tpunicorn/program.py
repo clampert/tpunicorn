@@ -442,7 +442,8 @@ def recreate(tpu, zone, project, version, yes, dry_run, preempted, command, exec
       do_step('Step {}: running command...'.format(i+4), cmd, dry_run=dry_run)
   if len(exec) > 0:
     for i, cmd in enumerate(exec):
-      run_on_tpu('Step {}: running command...'.format(i+4+len(command)), cmd, dry_run=dry_run)
+      tpu_cmd = tpunicorn.tpu.ssh_tpu_command(tpu, zone=zone, project=project, command=cmd)
+      do_step('Step {}: running command...'.format(i+4+len(command)), tpu_cmd, dry_run=dry_run)
   click.echo('TPU {} {} ready for training.'.format(
     tpunicorn.tpu.parse_tpu_id(tpu),
     'would be' if dry_run else 'is'))
