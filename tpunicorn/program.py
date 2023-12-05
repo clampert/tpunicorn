@@ -235,7 +235,7 @@ def create(ctx, tpu, zone, version, accelerator_type, data_disk, async_, descrip
       zone = "europe-west4-a"
     else:
       raise ValueError("Please specify --zone")
-  is_v2 = (version is not None) and version.startswith('v2')
+  is_v2 = (version is not None) # and version.startswith('v2')
   if not is_v2 and data_disk is not None:
     raise ValueError("--data-disk can only be specified for TPU VMs; try --version v2-alpha")
   #if range is None and index >= 0 and not is_v2: # --range appears to be broken on TPU VMs for now; don't give a default
